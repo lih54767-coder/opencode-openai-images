@@ -30,6 +30,14 @@ export function isContained(root: string, candidate: string): boolean {
   return distance !== "" && !distance.startsWith("..") && !isAbsolute(distance);
 }
 
+export function isLexicallyContainedByWorkspaceRoots(
+  lexicalRoot: string,
+  canonicalRoot: string,
+  candidate: string,
+): boolean {
+  return isContained(lexicalRoot, candidate) || isContained(canonicalRoot, candidate);
+}
+
 export async function resolveWorkspaceRoot(context: WorkspaceContext): Promise<string> {
   if (!context || typeof context.directory !== "string" || context.directory.length === 0) {
     pathError("FILE_INPUT_INVALID", "session context.directory must be a non-empty path");
@@ -56,8 +64,9 @@ export async function resolveInputFile(context: WorkspaceContext, input: string)
   rejectUnsafePathText(input, "input path", "FILE_INPUT_INVALID");
 
   const normalizedInput = input.replace(/[\\/]+/gu, "/");
-  const lexicalPath = isAbsolute(normalizedInput) ? resolve(normalizedInput) : resolve(root, normalizedInput);
-  if (!isContained(root, lexicalPath)) {
+  const absoluteInput = isAbsolute(normalizedInput);
+  const lexicalPath = absoluteInput ? resolve(normalizedInput) : resolve(root, normalizedInput);
+  if (absoluteInput && !isLexicallyContainedByWorkspaceRoots(resolve(context.directory), root, lexicalPath)) {
     pathError("FILE_INPUT_INVALID", "input path must resolve inside the session workspace");
   }
 

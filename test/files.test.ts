@@ -12,6 +12,7 @@ import {
   type WorkspaceContext,
   writeOutput,
 } from "../src/files/index.js";
+import { isLexicallyContainedByWorkspaceRoots } from "../src/files/paths.js";
 
 const PNG_SIGNATURE = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 
@@ -178,6 +179,15 @@ describe("image inspection", () => {
 });
 
 describe("workspace input and masks", () => {
+  test("accepts lexical workspace aliases before canonical containment", () => {
+    const lexicalRoot = join(tmpdir(), "workspace-lexical-alias");
+    const canonicalRoot = join(tmpdir(), "workspace-canonical-root");
+
+    expect(isLexicallyContainedByWorkspaceRoots(lexicalRoot, canonicalRoot, join(lexicalRoot, "input.png"))).toBe(true);
+    expect(isLexicallyContainedByWorkspaceRoots(lexicalRoot, canonicalRoot, join(canonicalRoot, "input.png"))).toBe(true);
+    expect(isLexicallyContainedByWorkspaceRoots(lexicalRoot, canonicalRoot, join(tmpdir(), "outside", "input.png"))).toBe(false);
+  });
+
   test("prepares only ordinary files contained by the real workspace", async () => {
     const input = makePng(3, 2);
     await writeFile(join(workspace, "input.png"), input);
@@ -300,11 +310,11 @@ describe("atomic workspace output", () => {
     const second = await writeOutput(context, png);
     const jpeg = await writeOutput(context, makeJpeg(7, 5), { out: "nested/photo.png" });
     expect(first).toMatchObject({ mimeType: "image/png", width: 3, height: 2, byteLength: png.byteLength, versioned: false });
-    expect(first.path).toEndWith("/outputs/image.png");
-    expect(second.path).toEndWith("/outputs/image-v2.png");
+    expect(first.path).toEndWith(join("outputs", "image.png"));
+    expect(second.path).toEndWith(join("outputs", "image-v2.png"));
     expect(second.versioned).toBe(true);
     expect(jpeg).toMatchObject({ mimeType: "image/jpeg", width: 7, height: 5, versioned: false });
-    expect(jpeg.path).toEndWith("/nested/photo.jpeg");
+    expect(jpeg.path).toEndWith(join("nested", "photo.jpeg"));
     expect(await readFile(first.path)).toEqual(Buffer.from(png));
     await expect(writeOutput(context, new Uint8Array([1, 2, 3]), { out: "bad.png" })).rejects.toThrow("valid image");
   });

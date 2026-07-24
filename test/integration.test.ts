@@ -136,8 +136,8 @@ describe("full V1 tool chain with fake relay", () => {
     const first = await tools.generate.execute({ prompt: "make an image", out: "generated/image.png" }, context(workspace));
     const second = await tools.generate.execute({ prompt: "make another image", out: "generated/image.png" }, context(workspace));
 
-    expect(first.output).toContain("/generated/image.png");
-    expect(second.output).toContain("/generated/image-v2.png");
+    expect(first.output).toContain(join("generated", "image.png"));
+    expect(second.output).toContain(join("generated", "image-v2.png"));
     expect(first).not.toHaveProperty("attachments");
     expect(first).toMatchObject({ metadata: { code: "OK", connection: "primary", model: "model/v1._-", revisedPrompt: "revised by relay" } });
     expect((first as { metadata: { outputs: Array<Record<string, unknown>> } }).metadata.outputs[0]).toMatchObject({
@@ -158,7 +158,7 @@ describe("full V1 tool chain with fake relay", () => {
     }, context(workspace));
 
     expect(result).toMatchObject({ metadata: { code: "OK", connection: "primary" } });
-    expect(result.output).toContain("/edited/result.png");
+    expect(result.output).toContain(join("edited", "result.png"));
     expect(relay.editForm?.get("model")).toBe("model/v1._-");
     expect(relay.editForm?.get("n")).toBe("1");
     expect(relay.editForm?.getAll("image[]")).toHaveLength(2);
@@ -173,8 +173,8 @@ describe("full V1 tool chain with fake relay", () => {
     const result = await tools.generate.execute({ prompt: "make two relay outputs" }, context(workspace));
 
     expect(result.output).toContain("Generated 2 images");
-    expect(result.output).toContain("/outputs/image.png");
-    expect(result.output).toContain("/outputs/image-v2.png");
+    expect(result.output).toContain(join("outputs", "image.png"));
+    expect(result.output).toContain(join("outputs", "image-v2.png"));
     expect(result).toMatchObject({ metadata: { revisedPrompt: "revised by relay", outputs: [{ versioned: false }, { versioned: true }] } });
     expect((result as { metadata: { outputs: unknown[] } }).metadata.outputs).toHaveLength(2);
     expect(relay.generationBody?.n).toBe(1);
@@ -215,7 +215,7 @@ describe("full V1 tool chain with fake relay", () => {
     const tools = createImageTools(makeConfig(), dependencies);
     const result = await tools.generate.execute({ prompt: "make a remote image", out: "remote/result.webp" }, context(workspace));
 
-    expect(result.output).toContain("/remote/result.png");
+    expect(result.output).toContain(join("remote", "result.png"));
     expect(result).toMatchObject({ metadata: { outputs: [{ mime: "image/png", width: 1, height: 1 }] } });
   });
 
