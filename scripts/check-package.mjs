@@ -4,8 +4,9 @@ import { resolve } from "node:path";
 
 const root = process.cwd();
 const packageJson = JSON.parse(readFileSync(resolve(root, "package.json"), "utf8"));
-const npmBin = process.platform === "win32" ? "npm.cmd" : "npm";
-const raw = execFileSync(npmBin, ["pack", "--dry-run", "--json"], {
+const npmCli = process.env.npm_execpath;
+if (!npmCli) throw new Error("package check must run through an npm lifecycle script");
+const raw = execFileSync(process.execPath, [npmCli, "pack", "--dry-run", "--json"], {
   cwd: root,
   encoding: "utf8",
   stdio: ["ignore", "pipe", "pipe"],
