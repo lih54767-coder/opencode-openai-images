@@ -1,0 +1,5 @@
+!.slim/deepwork/
+!.slim/deepwork/**
+node_modules/
+dist/
+coverage/

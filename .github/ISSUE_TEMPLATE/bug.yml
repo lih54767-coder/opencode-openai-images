@@ -1,0 +1,29 @@
+name: Bug report
+description: Report a reproducible problem with the plugin.
+title: "[bug] "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Please remove API keys, private URLs, and image content from the report.
+  - type: textarea
+    id: summary
+    attributes:
+      label: What happened?
+      description: Describe the observed and expected behavior.
+    validations:
+      required: true
+  - type: input
+    id: versions
+    attributes:
+      label: Versions
+      description: Include plugin, OpenCode, Node, and Bun versions.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: Provide the smallest safe configuration or command sequence.
+    validations:
+      required: true

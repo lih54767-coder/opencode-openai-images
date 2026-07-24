@@ -1,0 +1,91 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Verify (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Build
+        run: npm run build
+
+      - name: Run all tests
+        run: bun test
+
+      - name: Check package contents
+        run: npm run check:package
+
+      - name: Smoke compiled PluginModule
+        run: npm run smoke:plugin
+
+      # Symlink and hard-link safety tests are intentionally mandatory. A
+      # platform capability failure must remain visible instead of being skipped.
+
+  opencode-smoke:
+    name: OpenCode 1.18.4 smoke
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+
+      - name: Install project dependencies
+        run: npm ci
+
+      - name: Run clean prepublish/package flow
+        run: npm run prepublishOnly
+
+      - name: Install pinned OpenCode CLI
+        run: npm install --no-save --no-package-lock opencode-ai@1.18.4
+
+      - name: Assert OpenCode version
+        shell: bash
+        run: |
+          version="$(./node_modules/.bin/opencode --version)"
+          test "$version" = "1.18.4"
+
+      - name: Run clean-XDG OpenCode smoke
+        env:
+          OPENCODE_BIN: ${{ github.workspace }}/node_modules/.bin/opencode
+        run: npm run smoke:opencode
