@@ -21,6 +21,7 @@ for (const file of required) {
 
 const requiredReleaseFiles = [
   "README.md",
+  "README.zh-CN.md",
   "LICENSE",
   "CONTRIBUTING.md",
   "CODE_OF_CONDUCT.md",
@@ -31,6 +32,7 @@ const requiredReleaseFiles = [
   "docs/security.md",
   "docs/troubleshooting.md",
   "docs/recipes/new-api-cliproxyapi.md",
+  "docs/release.md",
 ];
 for (const file of requiredReleaseFiles) {
   if (!existsSync(resolve(root, file))) throw new Error(`package check failed: missing release file ${file}`);

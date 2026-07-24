@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { once } from "node:events";
 import { spawn } from "node:child_process";
 import { join, resolve } from "node:path";
@@ -16,6 +16,28 @@ const cacheHome = join(temp, "cache");
 const stateHome = join(temp, "state");
 await Promise.all([project, configHome, dataHome, cacheHome, stateHome].map((directory) => mkdir(directory, { recursive: true })));
 
+const envSentinel = "smoke-env-sentinel";
+const fileSentinel = "smoke-file-sentinel";
+const probeMarker = join(temp, "probe-result.json");
+const probeSentinelFile = join(temp, "probe-sentinel.txt");
+const probeEntry = join(temp, "probe-plugin.mjs");
+await writeFile(probeSentinelFile, fileSentinel);
+await writeFile(probeEntry, [
+  "import { writeFile } from \"node:fs/promises\";",
+  `const expected = ${JSON.stringify({ envSentinel, fileSentinel })};`,
+  "export default {",
+  "  id: \"smoke-opencode-interpolation-probe\",",
+  "  server: async (_input, options) => {",
+  "    const nestedTuple = options?.nested?.tuple;",
+  "    if (options?.envValue !== expected.envSentinel || options?.fileValue !== expected.fileSentinel || nestedTuple?.[0] !== expected.envSentinel || nestedTuple?.[1] !== expected.fileSentinel) {",
+  "      throw new Error(\"interpolation probe received unexpected values\");",
+  "    }",
+  "    await writeFile(options.markerPath, JSON.stringify({ envValue: options.envValue, fileValue: options.fileValue, nestedTuple }));",
+  "    return {};",
+  "  },",
+  "};",
+].join("\n"));
+
 const compiledModule = await import(pathToFileURL(entry).href);
 const compiledPlugin = compiledModule.default;
 let invalidOptionsObserved = false;
@@ -29,6 +51,7 @@ if (!invalidOptionsObserved) throw new Error("invalid plugin options did not exe
 
 const env = {
   ...process.env,
+  SMOKE_OPENCODE_ENV_SENTINEL: envSentinel,
   XDG_CONFIG_HOME: configHome,
   XDG_DATA_HOME: dataHome,
   XDG_CACHE_HOME: cacheHome,
@@ -46,9 +69,17 @@ async function stopChild(child) {
 
 async function startServer() {
   await writeFile(join(project, "opencode.json"), JSON.stringify({
-    plugin: [[entry, {
-      connections: { smoke: { baseURL: "https://relay.example.test", model: "smoke-model" } },
-    }]],
+    plugin: [
+      [entry, {
+        connections: { smoke: { baseURL: "https://relay.example.test", model: "smoke-model" } },
+      }],
+      [probeEntry, {
+        markerPath: probeMarker,
+        envValue: "{env:SMOKE_OPENCODE_ENV_SENTINEL}",
+        fileValue: `{file:${probeSentinelFile}}`,
+        nested: { tuple: ["{env:SMOKE_OPENCODE_ENV_SENTINEL}", `{file:${probeSentinelFile}}`] },
+      }],
+    ],
   }, null, 2));
 
   const child = spawn(binary, ["serve", "--print-logs", "--log-level", "DEBUG", "--hostname", "127.0.0.1", "--port", "0"], {
@@ -95,6 +126,24 @@ async function startServer() {
   }
 }
 
+async function fetchProbeResult() {
+  const deadline = Date.now() + 10_000;
+  let lastError = "probe marker was not created";
+  while (Date.now() < deadline) {
+    try {
+      const result = JSON.parse(await readFile(probeMarker, "utf8"));
+      if (result.envValue !== envSentinel || result.fileValue !== fileSentinel || JSON.stringify(result.nestedTuple) !== JSON.stringify([envSentinel, fileSentinel])) {
+        throw new Error("probe marker contained unexpected interpolation values");
+      }
+      return result;
+    } catch (error) {
+      lastError = error instanceof Error ? error.message : String(error);
+    }
+    await new Promise((resolveRetry) => setTimeout(resolveRetry, 100));
+  }
+  throw new Error(lastError);
+}
+
 async function fetchToolIds(baseURL) {
   const endpoint = new URL("/experimental/tool/ids", baseURL);
   endpoint.searchParams.set("directory", project);
@@ -132,6 +181,8 @@ try {
   const server = await startServer();
   try {
     const registry = await fetchToolIds(server.baseURL);
+    const interpolation = await fetchProbeResult();
+    console.log(`SMOKE_OPENCODE_INTERPOLATION_OK: ${JSON.stringify(interpolation)}`);
     console.log(`SMOKE_OPENCODE_OK: ${registry.endpoint} -> ${JSON.stringify(registry.toolIds)}`);
   } catch (error) {
     throw new Error(`${error instanceof Error ? error.message : String(error)}\n${server.getOutput().slice(-4_000)}`);

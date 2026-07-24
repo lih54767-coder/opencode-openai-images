@@ -1,11 +1,13 @@
 # opencode-openai-images
 
+[English](README.md) | [简体中文](README.zh-CN.md)
+
 [![CI](https://github.com/lih54767-coder/opencode-openai-images/actions/workflows/ci.yml/badge.svg)](https://github.com/lih54767-coder/opencode-openai-images/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 An OpenCode plugin that exposes configured OpenAI Images-compatible generation and editing connections as local, workspace-safe tools.
 
-> **Status:** `0.1.0` pre-release; the package has not been published to npm; live image-capable relay generation/edit E2E is pending. Fake-relay, file-layer, loader, and package validation evidence has passed. Do not create a release tag or publish to npm until live generation and edit E2E plus public CI evidence are complete.
+> **Status:** `0.1.0` pre-release; the package has not been published to npm. The fake-relay full plugin chain, file-layer/package validation, and the real OpenCode `1.18.4` tool registry have been verified. Real external-provider generation/edit E2E, the release tag, GitHub Release, and npm publication have not been completed. Do not create a release tag or publish to npm until real generation and edit E2E plus the required public validation evidence are complete.
 
 ## V1 scope
 
@@ -39,19 +41,35 @@ The transport does not read local paths. The tool layer prepares local files bef
 
 ## Installation
 
-### OpenCode package installation (recommended)
+### OpenCode package installation (after npm publication)
 
-Add the package name and its options directly to `opencode.json` using the tuple form shown below:
+For stable OpenCode versions in the supported range `>=1.18.4 <2`, configure the published package directly in `opencode.json` with the plugin tuple form. The exact `opencode-openai-images@0.1.0` specifier below is the deterministic post-release example:
 
-1. Save the configuration.
-2. Restart OpenCode.
-3. OpenCode resolves the npm plugin through its Bun-compatible plugin runtime; users do not need to run `npm install` first.
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "plugin": [
+    [
+      "opencode-openai-images@0.1.0",
+      {
+        "connections": {
+          "primary": {
+            "baseURL": "https://images.example.com/api/v1",
+            "model": "image-model-placeholder",
+            "apiKey": "{env:OPENAI_IMAGES_API_KEY}"
+          }
+        }
+      }
+    ]
+  ]
+}
+```
 
-The package is still a `0.1.0` pre-release and npm publication is pending. This is the intended user flow once the package is available from the configured npm registry.
+The package has **not** been published to npm yet, so this package-name example is not currently installable. After publication, save the configuration and restart OpenCode; its Bun-compatible plugin runtime resolves the npm plugin. Do not use an `opencode plugin` CLI command—this project uses OpenCode configuration.
 
 ### Local development
 
-For a local checkout, use the verified compiled-entry flow. Replace the path with an absolute path to the checkout; keep the options object as the second tuple element:
+For the current local development workflow, npm publication is not required. Build the checkout and use the verified compiled entry as an absolute path in the first tuple element; keep the options object as the second tuple element:
 
 ```bash
 npm install && npm run build
@@ -77,7 +95,7 @@ npm install && npm run build
 }
 ```
 
-Do not use `npm link` for this workflow; the absolute compiled `dist/index.js` tuple is the validated local-development path.
+The absolute compiled `dist/index.js` tuple is the validated local-development path. The package-name tuple above is reserved for the post-publication install flow.
 
 ## Minimal `opencode.json`
 
@@ -88,7 +106,7 @@ OpenCode passes the second tuple element as plugin options. The API root is exac
   "$schema": "https://opencode.ai/config.json",
   "plugin": [
     [
-      "opencode-openai-images",
+      "opencode-openai-images@0.1.0",
       {
         "connections": {
           "primary": {
@@ -114,7 +132,7 @@ The host OpenCode configuration interpolation supports `{env:NAME}` and `{file:P
 }
 ```
 
-Keep secrets outside source control. See [configuration](docs/configuration.md) for the complete schema and validation rules.
+If an `{env:NAME}` variable is missing, OpenCode substitutes an empty string, which then fails this plugin's non-empty credential validation when used as `apiKey`. A missing `{file:PATH}` reference makes OpenCode configuration loading fail. Keep secrets outside source control. See [configuration](docs/configuration.md) for the complete schema and validation rules.
 
 ## Named connections
 
@@ -243,6 +261,7 @@ npm pack --dry-run
 - [Protocol compatibility](docs/protocol-compatibility.md)
 - [Security model](docs/security.md)
 - [Troubleshooting](docs/troubleshooting.md)
+- [Release SOP](docs/release.md)
 - [Contributing](CONTRIBUTING.md)
 - [Security policy](SECURITY.md)
 - [Changelog](CHANGELOG.md)

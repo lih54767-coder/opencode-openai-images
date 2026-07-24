@@ -1,0 +1,114 @@
+name: Package smoke
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  package-smoke:
+    name: Package smoke (Ubuntu)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2.2.0
+        with:
+          bun-version: 1.3.14
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run verify
+        run: npm run verify
+
+      - name: Run prepublish validation
+        run: npm run prepublishOnly
+
+      - name: Install pinned OpenCode CLI
+        run: npm install --no-save --no-package-lock opencode-ai@1.18.4
+
+      - name: Assert OpenCode version
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="$(./node_modules/.bin/opencode --version)"
+          test "$version" = "1.18.4"
+
+      - name: Validate tag version when tag-triggered
+        shell: bash
+        run: |
+          set -euo pipefail
+          package_version="$(node -p "require('./package.json').version")"
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            expected_version="${GITHUB_REF_NAME#v}"
+            test "$expected_version" = "$package_version"
+            echo "PACKAGE_SMOKE_TAG_VERSION_OK: v${package_version}"
+          else
+            echo "PACKAGE_SMOKE_DISPATCH_OK: no tag supplied; validated candidate ${package_version} without fabricating a tag"
+          fi
+
+      - name: Run clean-XDG OpenCode registry/interpolation smoke
+        env:
+          OPENCODE_BIN: ${{ github.workspace }}/node_modules/.bin/opencode
+        run: npm run smoke:opencode
+
+      - name: Run deterministic OpenCode runtime smoke
+        env:
+          OPENCODE_BIN: ${{ github.workspace }}/node_modules/.bin/opencode
+        run: npm run smoke:runtime
+
+      - name: Pack and isolate-install tarball
+        shell: bash
+        run: |
+          set -euo pipefail
+          tmp_dir="$(mktemp -d)"
+          trap 'rm -rf "$tmp_dir"' EXIT
+
+          tarball_name="$(npm pack --silent --pack-destination "$tmp_dir")"
+          tarball="$tmp_dir/$tarball_name"
+          test -f "$tarball"
+          file_count="$(tar -tzf "$tarball" | wc -l | tr -d ' ')"
+          test "$file_count" -gt 0
+          echo "PACKAGE_SMOKE_TARBALL_OK: files=$file_count tarball=$tarball_name"
+
+          app_dir="$tmp_dir/app"
+          mkdir -p "$app_dir"
+          (
+            cd "$app_dir"
+            npm init --yes >/dev/null
+            npm install --ignore-scripts --no-package-lock --no-audit --no-fund "$tarball" @opencode-ai/plugin@1.18.4
+          )
+
+          package_dir="$app_dir/node_modules/opencode-openai-images"
+          for file in dist/index.js README.md README.zh-CN.md docs/release.md; do
+            test -f "$package_dir/$file"
+          done
+          PACKAGE_DIR="$package_dir" node --input-type=module - <<'NODE'
+          import { existsSync } from "node:fs";
+          import { resolve } from "node:path";
+          import { pathToFileURL } from "node:url";
+
+          const packageDir = process.env.PACKAGE_DIR;
+          if (!packageDir) throw new Error("PACKAGE_DIR was not set");
+          const entry = resolve(packageDir, "dist/index.js");
+          if (!existsSync(entry)) throw new Error("isolated package entry is missing");
+          const namespace = await import(pathToFileURL(entry).href);
+          if (Object.keys(namespace).join(",") !== "default") throw new Error("isolated package entry exports changed");
+          if (namespace.default?.id !== "opencode-openai-images" || typeof namespace.default?.server !== "function") {
+            throw new Error("isolated package entry did not expose the PluginModule default");
+          }
+          console.log("PACKAGE_SMOKE_ISOLATED_ENTRY_OK");
+          NODE

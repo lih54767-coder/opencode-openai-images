@@ -37,6 +37,7 @@
     "dist",
     "docs",
     "README.md",
+    "README.zh-CN.md",
     "LICENSE",
     "CONTRIBUTING.md",
     "CODE_OF_CONDUCT.md",
@@ -61,6 +62,7 @@
     "check:package": "node scripts/check-package.mjs",
     "smoke:plugin": "npm run build && node scripts/smoke-plugin.mjs",
     "smoke:opencode": "npm run build && node scripts/smoke-opencode.mjs",
+    "smoke:runtime": "npm run build && node scripts/smoke-opencode-runtime.mjs",
     "smoke": "npm run smoke:plugin && npm run smoke:opencode",
     "verify": "npm run typecheck && npm run build && npm test && npm run check:package && npm run smoke:plugin",
     "prepublishOnly": "npm run verify"
