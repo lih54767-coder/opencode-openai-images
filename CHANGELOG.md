@@ -6,6 +6,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-07-24
+
 ### Added
 
 - OpenCode plugin entrypoint with `openai_image_generate` and `openai_image_edit` tools.
@@ -19,5 +21,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Notes
 
-- Version `0.1.0` is currently a pre-release and has not been published to npm.
-- Live image-capable relay generation and edit E2E is still pending.
+- This is the `0.1.0` release candidate. The npm package, `v0.1.0` tag, and GitHub Release are still pending.
+- The approved real-provider E2E does not guarantee compatibility with every supplier. Real-supplier mask and multi-reference behavior remain unverified; deterministic plugin tests continue to cover the implemented contract and safety boundaries.
+
+### Validation
+
+- Deterministic real OpenCode `1.18.4` runtime smoke passed generation and edit.
+- Public CI passed its Linux, macOS, Windows, and pinned OpenCode jobs.
+- One approved real external-provider generation and single-image edit E2E passed without retry. Both outputs were valid PNGs and were deleted after validation; no private provider details are recorded here.

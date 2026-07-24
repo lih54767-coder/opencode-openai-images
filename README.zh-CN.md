@@ -7,7 +7,7 @@
 
 一个 OpenCode 插件，将已配置的、兼容 OpenAI Images 的生成与编辑连接暴露为本地且限定在工作区内的工具。
 
-> **状态：** `0.1.0` 预发布版本；该 package 尚未发布到 npm。fake relay 的完整插件链路、file-layer/package validation 和真实 OpenCode `1.18.4` tool registry 已验证。真实外部供应商的生成/编辑 E2E、release tag、GitHub Release 和 npm 发布尚未完成。在真实生成和编辑 E2E 以及所需的公开验证证据完成前，不要创建 release tag 或发布到 npm。
+> **状态：** `0.1.0` release candidate；npm package、`v0.1.0` tag 和 GitHub Release 仍待完成。fake relay/contract validation、真实 OpenCode `1.18.4` 的确定性生成与编辑 runtime smoke、覆盖 Linux/macOS/Windows 和固定 OpenCode job 的公开 CI，以及一次获批准的真实外部供应商生成和单图编辑 E2E 均已通过。该批准的 E2E 不构成对所有供应商的兼容性保证；真实供应商的 mask 和多参考图行为仍未验证。在单独的 release 审批完成前不要发布。
 
 ## V1 范围
 
@@ -249,11 +249,12 @@ npm run build
 bun test
 npm run verify
 npm run smoke:opencode
+npm run smoke:runtime
 npm run prepublishOnly
 npm pack --dry-run
 ```
 
-`npm run verify` 是常规验证流程；`npm run smoke:opencode` 通过 OpenCode 验证编译后的插件并检查真实 tool registry；`npm run prepublishOnly` 在不发布的情况下运行 package 发布检查。测试默认使用 fake relay 和注入的 fetch 实现，不需要真实网络或供应商凭据。真实外部供应商的、具备图像能力的生成/编辑 E2E 仍待完成，因此当前证据不是 release 或 npm 发布信号。另请参阅[贡献指南](CONTRIBUTING.md)、[故障排查](docs/troubleshooting.md)和 [New API / CLIProxyAPI 配置示例](docs/recipes/new-api-cliproxyapi.md)。
+`npm run verify` 是常规验证流程；`npm run smoke:opencode` 通过 OpenCode 验证编译后的插件并检查 registry/interpolation 行为；`npm run smoke:runtime` 运行真实 OpenCode `1.18.4` 的确定性生成与编辑 session smoke；`npm run prepublishOnly` 在不发布的情况下运行 package 发布检查。测试默认使用 fake relay 和注入的 fetch 实现，不需要真实网络或供应商凭据。一次获批准的真实外部供应商生成和单图编辑 E2E 也已在不重试的情况下通过，输出为有效 PNG，并已在验证后删除。该结果不构成对所有供应商的兼容性保证；真实供应商的 mask 和多参考图行为仍未验证。另请参阅[贡献指南](CONTRIBUTING.md)、[故障排查](docs/troubleshooting.md)和 [New API / CLIProxyAPI 配置示例](docs/recipes/new-api-cliproxyapi.md)。
 
 ## 项目文档
 

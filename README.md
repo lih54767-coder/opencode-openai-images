@@ -7,7 +7,7 @@
 
 An OpenCode plugin that exposes configured OpenAI Images-compatible generation and editing connections as local, workspace-safe tools.
 
-> **Status:** `0.1.0` pre-release; the package has not been published to npm. The fake-relay full plugin chain, file-layer/package validation, and the real OpenCode `1.18.4` tool registry have been verified. Real external-provider generation/edit E2E, the release tag, GitHub Release, and npm publication have not been completed. Do not create a release tag or publish to npm until real generation and edit E2E plus the required public validation evidence are complete.
+> **Status:** `0.1.0` release candidate; the npm package, `v0.1.0` tag, and GitHub Release are pending. Fake-relay/contract validation, the deterministic real OpenCode `1.18.4` runtime smoke for generation and edit, public CI across Linux/macOS/Windows and the pinned OpenCode job, and one approved real external-provider generation plus single-image edit E2E have passed. The approved E2E is not a compatibility guarantee for every supplier; real-supplier mask and multi-reference behavior remain unverified. Do not publish until the separate release approvals are complete.
 
 ## V1 scope
 
@@ -249,11 +249,12 @@ npm run build
 bun test
 npm run verify
 npm run smoke:opencode
+npm run smoke:runtime
 npm run prepublishOnly
 npm pack --dry-run
 ```
 
-`npm run verify` is the normal validation flow; `npm run smoke:opencode` exercises the compiled plugin through OpenCode; and `npm run prepublishOnly` runs the package release checks without publishing. Tests use fake relays and injected fetch implementations by default. No real network or provider credential is required for the normal test suite. Live image-capable relay generation/edit E2E remains pending, so the current evidence is not a release or npm-publish signal. See [contributing](CONTRIBUTING.md), [troubleshooting](docs/troubleshooting.md), and the [New API / CLIProxyAPI recipe](docs/recipes/new-api-cliproxyapi.md).
+`npm run verify` is the normal validation flow; `npm run smoke:opencode` exercises the compiled plugin through OpenCode and checks registry/interpolation behavior; `npm run smoke:runtime` runs the deterministic real OpenCode `1.18.4` session smoke for generation and edit; and `npm run prepublishOnly` runs the package release checks without publishing. Tests use fake relays and injected fetch implementations by default. One approved real external-provider generation and single-image edit E2E has also passed without retry, with valid PNG outputs that were deleted after validation. That result is not a compatibility guarantee for every supplier; real-supplier mask and multi-reference behavior remain unverified. See [contributing](CONTRIBUTING.md), [troubleshooting](docs/troubleshooting.md), and the [New API / CLIProxyAPI recipe](docs/recipes/new-api-cliproxyapi.md).
 
 ## Project documents
 
